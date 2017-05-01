@@ -1,0 +1,1296 @@
+package com.mygdx.game;
+
+import com.badlogic.gdx.Application;
+import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
+import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Dialog;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.utils.Timer;
+
+import javax.swing.JOptionPane;
+import javax.swing.text.View;
+
+import static com.badlogic.gdx.Application.ApplicationType.Android;
+
+/**
+ * Mi primer juego
+ * Catalina Saavedra
+ */
+public class MyGdxGame extends ApplicationAdapter implements InputProcessor
+{
+	//Objeto que recoge el mapa de baldosas
+	private TiledMap mapa;
+
+	//Objeto con el que se pinta el mapa de baldosas
+	private OrthogonalTiledMapRenderer mapaRenderer;
+
+	// Cámara que nos da la vista del juego
+	private OrthographicCamera camara;
+
+	// Atributo en el que se cargará la hoja de sprites del mosquetero.
+	private Texture img;
+	//Atributo que permite dibujar imágenes 2D, en este caso el sprite.
+	private SpriteBatch sb;
+	// Atributo que permitirá la representación de la imagen de textura anterior.
+	private Sprite sprite;
+
+	//Constantes que indican el número de filas y columnas de la hoja de sprites.
+	private static final int FRAME_COLS = 3;
+	private static final int FRAME_ROWS = 4;
+
+	//Animación que se muestra en el método render()
+	private Animation jugador;
+	//Animaciones para cada una de las direcciones de movimiento del personaje del jugador.
+	private Animation jugadorArriba;
+	private Animation jugadorDerecha;
+	private Animation jugadorAbajo;
+	private Animation jugadorIzquierda;
+	// Tamaño del mapa de baldosas.
+	private int mapaAncho, mapaAlto;
+	//Atributos que indican la anchura y la altura de un tile del mapa de baldosas
+	int anchoCelda, altoCelda;
+	//Posición actual del jugador.
+	private float jugadorX, jugadorY;
+	// Este atributo indica el tiempo en segundos transcurridos desde que se inicia la animación
+	// , servirá para determinar cual es el frame que se debe representar.
+	private float stateTimePC;
+
+	//Contendrá el frame que se va a mostrar en cada momento.
+	private TextureRegion cuadroActual;
+
+	//Atributos que indican la anchura y altura del sprite animado del jugador.
+	int anchoJugador, altoJugador;
+
+	/**************** NPC **********************/
+	//Animaciones posicionales relacionadas con los NPC del juego
+	private Animation<TextureRegion> noJugadorArriba;
+	private Animation<TextureRegion> noJugadorDerecha;
+	private Animation<TextureRegion> noJugadorAbajo;
+	private Animation<TextureRegion> noJugadorIzquierda;
+	//Array con los objetos Animation de los NPC
+	private Animation noJugador2;
+	//Atributos que indican la anchura y altura del sprite animado de los NPC.
+	int anchoNoJugador, altoNoJugador;
+	//Posición inicial X de cada uno de los NPC
+	private float[] noJugadorX;
+	//Posición inicial Y de cada uno de los NPC
+	private float[] noJugadorY;
+	//Posición final X de cada uno de los NPC
+	private float[] destinoX;
+	//Posición final Y de cada uno de los NPC
+	private float[] destinoY;
+	//Número de NPC que van a aparecer en el juego
+	private static final int numeroNPCs = 7;
+	// Este atributo indica el tiempo en segundos transcurridos desde que se inicia la animación
+	//de los NPC , servirá para determinar cual es el frame que se debe representar.
+	private float stateTimeNPC = 0;
+	//MAlo 2 (el listo)************************************
+	//Animaciones posicionales relacionadas con los NPC del juego
+	private Animation<TextureRegion> noJugadorArriba2;
+	private Animation<TextureRegion> noJugadorDerecha2;
+	private Animation<TextureRegion> noJugadorAbajo2;
+	private Animation<TextureRegion> noJugadorIzquierda2;
+	//Array con los objetos Animation de los NPC
+	private Animation[] noJugador;
+	//Atributos que indican la anchura y altura del sprite animado de los NPC.
+	int anchoNoJugador2, altoNoJugador2;
+	//Posición inicial X de cada uno de los NPC
+	private float noJugadorX2, noJugadorY2;
+	//Número de NPC que van a aparecer en el juego
+	private static final int numeroNPCs2 = 1;
+	//correspondiente al no jugador inteligente
+	private float stateTimeNPC2 = 0;
+
+
+	//******************Musica y sonidos**************************+
+	// Música de fondo del juego
+	private Music musica;
+
+	// Sonidos
+	//private Sound sonidoPasos;
+	private Sound sonidoColisionEnemigo;
+	private Sound sonidoObstaculo;
+	private Sound sonidoCaidaAgujero;
+	private Sound sonidoTheEnd;
+	private Sound sonidoGanar;
+
+	//************************************************************
+	/** Numeración de capas:
+	 *  Capa 0: Suelo
+	 *  Capa 1: Decoracion Suelo
+	 *  Capa 2: Agujero
+	 *  Capa 3: Barco/Plataforma
+	 *  Capa 4: Paredes
+	 *  Capa 5: Obstaculos
+	 *  Capa 6: Decoracion Paredes
+	 *  Capa 7: Objetos
+	 *  Capa 8: Alto Nivel
+	 *  Capa 9: objeto2
+	 */
+	private static final int CAPA_SUELO = 0;
+	private static final int CAPA_DECORACION_SUELO = 1;
+	private static final int CAPA_AGUJERO = 2;
+	private static final int CAPA_BARCO_PLATAFORMA = 3;
+	private static final int CAPA_PIEDRAS_AGUA= 4;
+	private static final int CAPA_OBSTACULOS = 5;
+	private static final int CAPA_DECORACION_PAREDES = 6;
+	private static final int CAPA_OBJETOS = 7;
+	private static final int CAPA_ALTO_NIVEL = 8;
+	private static final int CAPA_OBJETOS2 = 9;
+
+	//Estas dos variables almacenaran las celdas donde hay obstaculos/:
+	private boolean[][] collaresObjetos2;
+	//Capa del mapa del baldosas que contiene los obstáculos
+	private TiledMapTileLayer capaCollaresObjetos2;
+
+	//Estas dos variables almacenaran las celdas donde hay obstaculos/:
+	private boolean[][] obstaculos;
+	//Capa del mapa del baldosas que contiene los obstáculos
+	private TiledMapTileLayer capaObstaculos;
+
+	//Capa del mapa del baldosas que contiene los obstáculos
+	private boolean[][] plataforma;
+	private TiledMapTileLayer capaBarcoPlataforma;
+
+	//Capa del mapa del baldosas que contiene los obstáculos
+	private boolean[][] piedrasAgua;
+	private TiledMapTileLayer capaPiedrasAgua;
+
+	//Estas dos variables almacenaran las celdas donde hay agujeros:
+	private boolean[][] agujerosNegros;
+	private TiledMapTileLayer capaAgujerosNegros;
+
+	//Estas dos variables almacenaran las celdas donde hay collares que son los objetos a recolectar:
+	private boolean[][] collaresObjetos;
+	private TiledMapTileLayer capaCollaresObjetos;
+
+	//contador para saber cuantos collares a juntado ya nuestro personaje
+	int cantidadCollaresEncontrados = 6;
+
+	//Variable BitmapFont para pintar texto
+	private BitmapFont font;
+	//Variable verifica las ciadas a los agujeros
+	boolean haCaido = false, juegoTerminado = false;
+	boolean haSidoAtrapado = false;
+	boolean teHasHundido = false, maloChoca = false;
+
+	//Vidas*************************************************
+	//Variable vidas.
+	int cantidadViedas = 3;
+
+	// Animacion de los tesoros que se muestra en el metodo render()
+	private Animation vidas;
+
+	// Posicion actual de los tesoros.
+	private float vidas1X, vidas1Y, vidas2X, vidas2Y,vidas3X, vidas3Y;
+
+	// Atributos que indican la anchura y altura del sprite de los tesoros
+	private int anchoVidas, altoVidas;
+
+	// Atributo que indica el tiempo en segundos transcurridos desde que se inicia la animacion
+	private float stateTimeVidasFinal = 0;
+
+	private boolean  vidasMovil = true, desaparecenVidas = true;
+
+
+	/**
+	 *
+	 */
+	@Override
+	public void create () {
+		//Creamos una cámara y la vinculamos con el lienzo del juego.
+		//En este caso le damos unos valores de tamaño que haga que el juego
+		//se muestre de forma idéntica en todas las plataformas.
+		camara = new OrthographicCamera(640, 480);
+		//Posicionamos la vista de la cámara para que su vértice inferior izquierdo sea (0,0)
+		camara.position.set(camara.viewportWidth / 2f, camara.viewportHeight / 2f, 0);
+		//Vinculamos los eventos de entrada a esta clase.
+		Gdx.input.setInputProcessor(this);
+		camara.update();
+
+		// Cargamos la imagen de los frames del mosquetero en el objeto img de la clase Texture.
+		//Correspondiente a el heroe de el juego
+		img = new Texture(Gdx.files.internal("luchador2.png"));
+
+		//Sacamos los frames de img en un array de TextureRegion.
+		TextureRegion[][] tmp = TextureRegion.split(img, img.getWidth() / FRAME_COLS, img.getHeight() / FRAME_ROWS);
+
+		// Creamos las distintas animaciones, teniendo en cuenta que el tiempo de muestra de cada frame
+		// será de 500 milisegundos.
+		jugadorArriba = new Animation(0.150f, tmp[3]);
+		jugadorDerecha = new Animation(0.150f, tmp[2]);
+		jugadorAbajo = new Animation(0.150f, tmp[0]);
+		jugadorIzquierda = new Animation(0.150f, tmp[1]);
+		posicionarJugadorEnLaEntrada();
+
+		//Creamos el objeto SpriteBatch que nos permitirá representar adecuadamente el sprite
+		//en el método render()
+		sb = new SpriteBatch();
+
+		//Cargamos el mapa de baldosas desde la carpeta de assets
+		//que es el mapa principal del juego
+		mapa = new TmxMapLoader().load("miMapa1.tmx");
+		mapaRenderer = new OrthogonalTiledMapRenderer(mapa);
+
+		//Determinamos el alto y ancho del mapa de baldosas. Para ello necesitamos extraer la capa
+		//base del mapa y, a partir de ella, determinamos el número de celdas a lo ancho y alto,
+		//así como el tamaño de la celda, que multiplicando por el número de celdas a lo alto y
+		//ancho, da como resultado el alto y ancho en pixeles del mapa.
+		TiledMapTileLayer capa = (TiledMapTileLayer) mapa.getLayers().get(0);
+		anchoCelda = (int) capa.getTileWidth();
+		altoCelda = (int) capa.getTileHeight();
+		mapaAncho = capa.getWidth() * anchoCelda;
+		mapaAlto = capa.getHeight() * altoCelda;
+
+		//Cargamos en los atributos del ancho y alto del sprite sus valores
+		cuadroActual = (TextureRegion) jugador.getKeyFrame(stateTimePC);
+		anchoJugador = cuadroActual.getRegionHeight();
+		altoJugador = cuadroActual.getRegionHeight();
+
+		//***MALOs NPC *******************************************************
+		//Inicializamos el apartado referente a los NPC
+		noJugador = new Animation[numeroNPCs];
+		noJugadorX = new float[numeroNPCs];
+		noJugadorY = new float[numeroNPCs];
+		destinoX = new float[numeroNPCs];
+		destinoY = new float[numeroNPCs];
+
+		//Creamos las animaciones posicionales de los NPC
+		//Cargamos la imagen de los frames del malo en el objeto img de la clase Texture.
+		img = new Texture(Gdx.files.internal("enemigo.png"));
+
+		//Sacamos los frames de img en un array de TextureRegion.
+		tmp = TextureRegion.split(img, img.getWidth() / FRAME_COLS, img.getHeight() / FRAME_ROWS);
+
+		// Creamos las distintas animaciones, teniendo en cuenta que el tiempo de muestra de cada frame
+		// será de 150 milisegundos.
+		noJugadorArriba = new Animation<TextureRegion>(0.150f, tmp[3]);
+		noJugadorArriba.setPlayMode(Animation.PlayMode.LOOP);
+		noJugadorDerecha = new Animation<TextureRegion>(0.150f, tmp[2]);
+		noJugadorDerecha.setPlayMode(Animation.PlayMode.LOOP);
+		noJugadorAbajo = new Animation<TextureRegion>(0.150f, tmp[0]);
+		noJugadorAbajo.setPlayMode(Animation.PlayMode.LOOP);
+		noJugadorIzquierda = new Animation<TextureRegion>(0.150f, tmp[1]);
+		noJugadorIzquierda.setPlayMode(Animation.PlayMode.LOOP);
+
+		//Cargamos en los atributos del ancho y alto del sprite del monstruo sus valores
+		cuadroActual = (TextureRegion) noJugadorAbajo.getKeyFrame(stateTimeNPC);
+		anchoNoJugador = cuadroActual.getRegionWidth();
+		altoNoJugador = cuadroActual.getRegionHeight();
+		//ponemos a los malos en una determinada posicion
+		posicionarMalos();
+
+		//MALO INTELIGENTE Super MALO ****************************************
+
+		//Cargamos la imagen de los frames del malo en el objeto img de la clase Texture.
+		img = new Texture(Gdx.files.internal("superMalo2.png"));
+
+		//Sacamos los frames de img en un array de TextureRegion.
+		tmp = TextureRegion.split(img, img.getWidth() / FRAME_COLS, img.getHeight() / FRAME_ROWS);
+
+		// Creamos las distintas animaciones, teniendo en cuenta que el tiempo de muestra de cada frame
+		// será de 150 milisegundos.
+		noJugadorArriba2 = new Animation(0.150f, tmp[3]);
+		noJugadorArriba2.setPlayMode(Animation.PlayMode.LOOP);
+		noJugadorDerecha2 = new Animation(0.150f, tmp[2]);
+		noJugadorDerecha2.setPlayMode(Animation.PlayMode.LOOP);
+		noJugadorAbajo2 = new Animation(0.150f, tmp[0]);
+		noJugadorAbajo2.setPlayMode(Animation.PlayMode.LOOP);
+		noJugadorIzquierda2 = new Animation(0.150f, tmp[1]);
+		noJugadorIzquierda2.setPlayMode(Animation.PlayMode.LOOP);
+
+		//Cargamos en los atributos del ancho y alto del sprite del monstruo sus valores
+		cuadroActual = (TextureRegion) noJugadorAbajo2.getKeyFrame(stateTimeNPC2);
+		anchoNoJugador2 = cuadroActual.getRegionWidth();
+		altoNoJugador2 = cuadroActual.getRegionHeight();
+
+		posicionarNoJugadorSuperMalo();
+
+		//SONIDOS **********************************************************
+		//Inicializamos la música de fondo del juego y la reproducimos.
+		musica = Gdx.audio.newMusic(Gdx.files.internal("musica.mp3"));
+		musica.play();
+
+		//Inicializamos los atributos de los efectos de sonido.
+		sonidoColisionEnemigo = Gdx.audio.newSound(Gdx.files.internal("qubodup-PowerDrain.ogg"));
+		//sonidoPasos = Gdx.audio.newSound(Gdx.files.internal("Fantozzi-SandR3.ogg"));
+		sonidoObstaculo = Gdx.audio.newSound(Gdx.files.internal("wall.ogg"));
+		sonidoCaidaAgujero = Gdx.audio.newSound(Gdx.files.internal("caida.mp3"));
+		sonidoTheEnd = Gdx.audio.newSound(Gdx.files.internal("theEnd.mp3"));
+		sonidoGanar = Gdx.audio.newSound(Gdx.files.internal("win2.mp3"));
+
+		//CAPAS**************************************************************
+		//Cargamos la capa de los obstáculos, que es la tercera en el TiledMap.
+		capaObstaculos = (TiledMapTileLayer) mapa.getLayers().get(CAPA_OBSTACULOS);
+		capaAgujerosNegros = (TiledMapTileLayer) mapa.getLayers().get(CAPA_AGUJERO);
+		capaCollaresObjetos2 = (TiledMapTileLayer) mapa.getLayers().get(CAPA_OBJETOS2);
+		capaCollaresObjetos = (TiledMapTileLayer) mapa.getLayers().get(CAPA_OBJETOS);
+		// Carga la capa del barco que realmente en mi caso es una plataforma, quinta en el TiledMap.
+		capaBarcoPlataforma = (TiledMapTileLayer) mapa.getLayers().get(CAPA_BARCO_PLATAFORMA);
+		capaPiedrasAgua = (TiledMapTileLayer) mapa.getLayers().get(CAPA_PIEDRAS_AGUA);
+
+		//Cargamos la matriz de los obstáculos del mapa de baldosas.
+		int anchoCapa = capaPiedrasAgua.getWidth();
+		int altoCapa = capaPiedrasAgua.getHeight();
+		// Carga la matriz de los  obstaculos del mapa de baldosas.
+		piedrasAgua = new boolean[anchoCapa][altoCapa];
+		for (int x = 0; x < anchoCapa; x++) {
+			for (int y = 0; y < altoCapa; y++) {
+				piedrasAgua[x][y] = (capaPiedrasAgua.getCell(x, y) != null);
+			}
+		}
+
+		// Carga la matriz de los barco/Plataforma del mapa de baldosas.
+		anchoCapa = capaObstaculos.getWidth();
+		altoCapa = capaObstaculos.getHeight();
+		// Carga la matriz de los  obstaculos del mapa de baldosas.
+		obstaculos = new boolean[anchoCapa][altoCapa];
+		for (int x = 0; x < anchoCapa; x++) {
+			for (int y = 0; y < altoCapa; y++) {
+				obstaculos[x][y] = (capaObstaculos.getCell(x, y) != null);
+			}
+		}
+
+		// Carga la matriz de los barco/Plataforma del mapa de baldosas.
+		anchoCapa = capaAgujerosNegros.getWidth();
+		altoCapa = capaAgujerosNegros.getHeight();
+		// Carga la matriz de los  agujeros del mapa de baldosas.
+		agujerosNegros = new boolean[anchoCapa][altoCapa];
+		for (int x = 0; x < anchoCapa; x++) {
+			for (int y = 0; y < altoCapa; y++) {
+				agujerosNegros[x][y] = (capaAgujerosNegros.getCell(x, y) != null);
+			}
+		}
+
+		// Carga la matriz de los collares encontrados del mapa de baldosas.
+		anchoCapa = capaCollaresObjetos.getWidth();
+		altoCapa = capaCollaresObjetos.getHeight();
+		// Carga la matriz de los  objetos collar  del mapa de baldosas.
+		collaresObjetos = new boolean[anchoCapa][altoCapa];
+		for (int x = 0; x < anchoCapa; x++) {
+			for (int y = 0; y < altoCapa; y++) {
+				collaresObjetos[x][y] = (capaCollaresObjetos.getCell(x, y) != null);
+			}
+		}
+
+		// Carga la matriz de los barco/Plataforma del mapa de baldosas.
+		anchoCapa = capaBarcoPlataforma.getWidth();
+		altoCapa = capaBarcoPlataforma.getHeight();
+		plataforma = new boolean[anchoCapa][altoCapa];
+		for (int x = 0; x < anchoCapa; x++) {
+			for (int y = 0; y < altoCapa; y++) {
+				plataforma[x][y] = (capaBarcoPlataforma.getCell(x, y) != null);
+			}
+		}
+
+		//Crea un BitmapFont utilizando el tipo de letra Arial 15pt por defecto incluido en el archivo JAR libgdx.
+		font = new BitmapFont();
+
+		// Carga la imagen de los frames del jugagor en el objeto img de la clase Texture.
+		img = new Texture(Gdx.files.internal("vidas.png"));
+
+		// Sacamos los frames de img en un array de TextureRegion.
+		tmp = TextureRegion.split(img, img.getWidth(), img.getHeight());
+
+		// Posicion inicial de las vidas
+		vidas1X = 544;
+		vidas1Y = 448;
+		vidas2X = 576;
+		vidas2Y = 448;
+		vidas3X = 608;
+		vidas3Y = 448;
+
+		//Pone a cero el atributo stateTime, que marca el tiempo de ejecucion de la animacion.
+		stateTimeVidasFinal = 0f;
+		vidas = new Animation(0f, tmp[0]);
+
+		// Carga en los atributos del ancho y alto del sprite sus valores
+		cuadroActual = (TextureRegion) vidas.getKeyFrame(stateTimeVidasFinal);
+		anchoVidas = (cuadroActual.getRegionWidth() / 2) / 2;//ajustamos las colisiones H
+		altoVidas = (cuadroActual.getRegionHeight()) / 2;
+	}
+
+	/**
+	 *
+	 */
+	@Override
+	public void render ()
+	{
+		//Ponemos el color del fondo a negro
+		Gdx.gl.glClearColor(0, 0, 0, 1);
+		//Borramos la pantalla
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+		//Actualizamos la cámara del juego
+		camara.update();
+		//Vinculamos el objeto de dibuja el TiledMap con la cámara del juego
+		mapaRenderer.setView(camara);
+		if(cantidadCollaresEncontrados != 6)
+			cargarCapaConCollaresEncontrados();
+
+		//Dibujamos el TiledMap
+		//Dibujamos las tres primeras capas del TiledMap (no incluye a la de altura)
+
+		int[] capas = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+		int[] capas2 = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+		if(cantidadCollaresEncontrados != 6)
+		mapaRenderer.render(capas);
+		else
+			mapaRenderer.render(capas2);
+
+
+		// extraemos el tiempo de la última actualización del sprite y la acumulamos a stateTime.
+		stateTimePC += Gdx.graphics.getDeltaTime();
+		//Extraermos el frame que debe ir asociado a al momento actual.
+		cuadroActual = (TextureRegion) jugador.getKeyFrame(stateTimePC);
+		// le indicamos al SpriteBatch que se muestre en el sistema de coordenadas
+		// específicas de la cámara.
+		sb.setProjectionMatrix(camara.combined);
+		//Inicializamos el objeto SpriteBatch
+		sb.begin();
+
+		//Dibuja texto en la posición especificada.
+		if (haCaido || haSidoAtrapado || teHasHundido || cantidadCollaresEncontrados == 0 || !desaparecenVidas)
+		{
+			// Pinta la pantalla en negro y desactiva los sonidos
+			Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+			font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+			font.getData().setScale(3f);
+			font.setColor(Color.RED);
+
+			if(haSidoAtrapado) {
+				font.getData().setScale(1.5f);
+				font.setColor(Color.RED);
+				if(cantidadViedas == 1) {
+					CharSequence str4 =  "¡Te has quedado sin vidas \n\n Fin del juego!";
+					font.draw(sb, str4 , (camara.viewportWidth / 2f) - 125f, (camara.viewportHeight / 2f) + 7f);
+					finJuego();
+				}else {
+					if(Gdx.app.getType().equals(Android)){
+						CharSequence str4 = "¡Te has hundido en la plataforma! \n\n  Te quedan : " + (cantidadViedas-1) + " vidas!"
+								+"\n\n Pulsa en la pantalla una vez para continuar";
+						font.draw(sb, str4, (camara.viewportWidth / 2f) - 125f, (camara.viewportHeight / 2f) + 7f);
+						vidasMovil = false;
+					}else {
+					CharSequence str1 = "¡Te ha atrapado un  malo!!!! \n \n Te quedan : " + (cantidadViedas-1) + " vidas!"
+							+"\n\n Pulsa enter para continuar  o Esc para salir";
+					font.draw(sb, str1, (camara.viewportWidth / 2f) - 125f, (camara.viewportHeight / 2f) + 7f);}
+				}
+			}
+			else if(haCaido) {
+				font.getData().setScale(1.5f);
+				font.setColor(Color.RED);
+				if(cantidadViedas == 1) {
+					CharSequence str4 =  "¡Te has quedado sin vidas \n\n Fin del juego!";
+					font.draw(sb, str4 , (camara.viewportWidth / 2f) - 125f, (camara.viewportHeight / 2f) + 7f);
+					finJuego();
+				}else {
+					if(Gdx.app.getType().equals(Android)){
+						CharSequence str4 = "¡Te has hundido en la plataforma! \n\n  Te quedan : " + (cantidadViedas-1) + " vidas!"
+								+"\n\n Pulsa en la pantalla una vez para continuar";
+						font.draw(sb, str4, (camara.viewportWidth / 2f) - 125f, (camara.viewportHeight / 2f) + 7f);
+						vidasMovil = false;
+					}else {
+						CharSequence str2 = "¡Has caido por un agujero!!! \n \n  Te quedan : " + (cantidadViedas - 1) + " vidas!"
+								+"\n\n Pulsa enter para continuar o Esc para salir";
+						font.draw(sb, str2, (camara.viewportWidth / 2f) - 125f, (camara.viewportHeight / 2f) + 7f);}
+				}
+			}
+			else if(cantidadCollaresEncontrados == 0) {
+				font.getData().setScale(1.5f);
+				font.setColor(Color.CORAL);
+				CharSequence str3 = "¡Has GANADO!!!!!! \n \n ";
+				font.draw(sb,str3 , (camara.viewportWidth / 2f) - 125f, (camara.viewportHeight / 2f) + 7f);
+				finJuego();
+			}else if (teHasHundido){
+				font.getData().setScale(1.5f);
+				font.setColor(Color.RED);
+				if(cantidadViedas == 1) {
+					CharSequence str4 = "¡Te has quedado sin vidas \n\n Fin del juego!";
+					font.draw(sb, str4 , (camara.viewportWidth / 2f) - 125f, (camara.viewportHeight / 2f) + 7f);
+					finJuego();
+				}else{
+					if(Gdx.app.getType().equals(Android)){
+							CharSequence str4 = "¡Te has hundido en la plataforma! \n\n  Te quedan : " + (cantidadViedas-1) + " vidas!"
+									+"\n\n Pulsa en la pantalla una vez para continuar";
+							font.draw(sb, str4, (camara.viewportWidth / 2f) - 125f, (camara.viewportHeight / 2f) + 7f);
+							vidasMovil = false;
+					}else {
+						CharSequence str4 = "¡Te has hundido en la plataforma! \n\n  Te quedan : " + (cantidadViedas - 1) + " vidas!"
+								+ "\n\n Pulsa enter para continuar  o Esc para salir";
+						font.draw(sb, str4, (camara.viewportWidth / 2f) - 125f, (camara.viewportHeight / 2f) + 7f);
+					}
+				}
+			}
+		}else
+		{
+			//Pintamos el objeto Sprite a través del objeto SpriteBatch
+			sb.draw(cuadroActual, jugadorX, jugadorY);
+
+			//Con este codigo hacemos que camine mientras
+			if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
+				daleMovimientoTecleando(Input.Keys.LEFT);
+			else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
+				daleMovimientoTecleando(Input.Keys.RIGHT);
+			else if (Gdx.input.isKeyPressed(Input.Keys.UP))
+				daleMovimientoTecleando(Input.Keys.UP);
+			else if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
+				daleMovimientoTecleando(Input.Keys.DOWN);
+			//en el caso que sea por medio de pantalla tactil para que el personaje siga el dedo
+			//usaremmos el siguiente metodo y caso
+			else if (Gdx.input.isTouched())
+				daleMovimientoTactil(Gdx.input.getX(),  Gdx.input.getY());
+
+			//Dibujamos las animaciones de los NPC
+			for (int i = 0; i < numeroNPCs; i++) {
+				actualizaNPC(i, 0.5f);
+				cuadroActual = (TextureRegion) noJugador[i].getKeyFrame(stateTimeNPC);
+				sb.draw(cuadroActual, noJugadorX[i], noJugadorY[i]);
+			}
+
+			// extraemos el tiempo de la última actualización del sprite y la acumulamos a stateTime.
+			stateTimeNPC2 += Gdx.graphics.getDeltaTime();
+			//Movemos el super malo
+			actualizaNPCSuperMalo(jugadorX,jugadorY, 0.5f);
+			//Pintamos el objeto Sprite super malo
+			cuadroActual = (TextureRegion) noJugador2.getKeyFrame(stateTimeNPC2);
+
+			sb.draw(cuadroActual, noJugadorX2, noJugadorY2);
+
+			cuadroActual = (TextureRegion) vidas.getKeyFrame(stateTimeVidasFinal);
+			if(cantidadViedas >= 3)
+				sb.draw(cuadroActual, vidas1X, vidas1Y);
+			if(cantidadViedas >= 2)
+				sb.draw(cuadroActual, vidas2X, vidas2Y);
+			if(cantidadViedas >= 1)
+				sb.draw(cuadroActual, vidas3X, vidas3Y);
+		}
+
+		//Finalizamos el objeto SpriteBatch
+		sb.end();
+		//encargado que no se vea la capa superior si es que se muestra
+		//el texto en la pantalla
+		if ( !haCaido && !haSidoAtrapado && !teHasHundido && desaparecenVidas && cantidadCollaresEncontrados != 0) {
+			//Pintamos la  capa de alto nivel del mapa de baldosas.
+			capas = new int[1];
+			capas[0] = CAPA_ALTO_NIVEL;
+			mapaRenderer.render(capas);
+			//capas[0] = CAPA_OBJETOS2;
+			//mapaRenderer.render(capas);
+		}
+
+		if(desaparecenVidas) {
+			//Hace falta tambien ponerlo aqui porque de lo contrario no se detectara
+			//en el caso de que un malo choque con el personaje principal
+			detectaColisionMalos();
+			detectaColisionSuperMalo();
+		}
+	}
+
+	@Override
+	public boolean keyDown(int keycode) {
+		// Si se pulsa uno de los cursores, se desplaza el sprite de forma adecuada un pixel
+		stateTimePC = 0;
+
+		daleMovimientoTecleando(keycode);
+		//Si se aprieta enter uego de perder una vida
+		//el Juego continua
+		if(keycode == Input.Keys.ENTER) {
+			//si tidavia quedan vidas
+			if(cantidadViedas > 1) {
+				cantidadViedas--;
+				desaparecenVidas = true;
+				//Volvemos a posicionar a el personaje principal a la entrada del juego
+				posicionarJugadorEnLaEntrada();
+				//al super malo lo ponemos de nuevo donde estaba al principio
+				posicionarNoJugadorSuperMalo();
+				//Volvemos a Cargar los globos malo
+				posicionarMalos();
+				//Volvemos aponer a las variables
+				//con su valor inicial
+				haCaido = false;
+				haSidoAtrapado = false;
+				teHasHundido = false;
+				teHasHundido = false;
+			}
+		}
+		//Si se quiere salir del juego , se puede salir apretando la tecla Scape en
+		//modo Desktop
+		if(keycode == Input.Keys.ESCAPE) {
+			finJuego();
+		}
+
+		// Si se pulsa la tecla del numero 1, se alterna la visibilidad de la primera capa del mapa de baldosas.
+		if (keycode == Input.Keys.NUM_1)
+			mapa.getLayers().get(0).setVisible(!mapa.getLayers().get(0).isVisible());
+		// Si se pulsa la tecla del numero 2, se alterna la visibilidad de la segunda capa del mapa de baldosas.
+		if (keycode == Input.Keys.NUM_2)
+			mapa.getLayers().get(1).setVisible(!mapa.getLayers().get(1).isVisible());
+		return true;
+	}
+
+	@Override
+	public boolean keyUp(int keycode)
+	{
+		jugadorArriba.setPlayMode(Animation.PlayMode.NORMAL);
+		jugadorAbajo.setPlayMode(Animation.PlayMode.NORMAL);
+		jugadorIzquierda.setPlayMode(Animation.PlayMode.NORMAL);
+		jugadorDerecha.setPlayMode(Animation.PlayMode.NORMAL);
+		return true;
+	}
+
+	@Override
+	public boolean touchDown(int screenX, int screenY, int pointer, int button)
+	{
+		if (Gdx.input.isKeyPressed(Input.Keys.BACK)){
+			finJuego();
+		}
+		if( Gdx.input.isTouched()){
+			if(haCaido || haSidoAtrapado || teHasHundido){
+			desaparecenVidas = true;
+			//Volvemos a posicionar a el personaje principal a la entrada del juego
+			posicionarJugadorEnLaEntrada();
+			//al super malo lo ponemos de nuevo donde estaba al principio
+			posicionarNoJugadorSuperMalo();
+			//Volvemos a Cargar los globos malo
+			posicionarMalos();
+
+			haCaido = false;
+			haSidoAtrapado = false;
+			teHasHundido = false;
+			teHasHundido = false;
+			cantidadViedas--;}
+		}
+
+		return true;
+	}
+
+	private void cargarCapaConCollaresEncontrados(){
+		// Carga la matriz de los collares del mapa de baldosas.
+		int anchoCapa = capaCollaresObjetos2.getWidth();
+		int altoCapa = capaCollaresObjetos2.getHeight();
+		// Carga la matriz de los  objetos collar del mapa de baldosas.
+		collaresObjetos2 = new boolean[anchoCapa][altoCapa];
+		for (int i = 0; i < cantidadCollaresEncontrados; i++){
+			for (int x = 0; x < anchoCapa; x++) {
+				for (int y = 0; y < altoCapa; y++) {
+					collaresObjetos2[x][y] = (capaCollaresObjetos2.getCell(x, y) != null);
+					if(capaCollaresObjetos2.getCell(x, y) != null)
+						capaCollaresObjetos2.getCell(x, y).setTile(null);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Posicionar al jugador
+	 */
+	public void posicionarJugadorEnLaEntrada(){
+		//En principio se utiliza la animación del jugador arriba como animación por defecto.
+		jugador = jugadorAbajo;
+		// Posición inicial del jugador.
+		jugadorX = 300;
+		jugadorY = 425;
+		//Ponemos a cero el atributo stateTime, que marca el tiempo e ejecución de la animación.
+		stateTimePC = 0f;
+	}
+
+	/**
+	 * Posicionar al super  malo desde 0
+	 */
+	public void posicionarNoJugadorSuperMalo()
+	{
+		//En principio se utiliza la animación del jugador arriba como animación por defecto.
+		noJugador2 = noJugadorAbajo2;
+		//Hacemos que dependiendo de las vidas que le queden al jugador
+		//cambie la posicion donde aparece
+		if(cantidadViedas == 3) {
+			// Posición inicial del No jugador 2.
+			noJugadorX2 = 32;
+			noJugadorY2 = 64;
+		}else if(cantidadViedas == 2){
+			// Posición inicial del No jugador 2.
+			noJugadorX2 = 608;
+			noJugadorY2 = 64;
+		}else{
+			// Posición inicial del No jugador 2.
+			noJugadorX2 = 300;
+			noJugadorY2 = 128;
+		}
+
+		// Ponemos a cero el atributo stateTimeNPC, que marca el tiempo e ejecución de la animación
+		// de los NPC.
+		stateTimeNPC2 = 0f;
+	}
+
+	/**
+	 * Posicionar a los globos malos desde 0
+	 */
+	public void posicionarMalos(){
+		//Se inicializan, la animación por defecto y, de forma aleatoria, las posiciones
+		//iniciales y finales de los NPC. Para simplificar un poco, los NPC pares, se moveran
+		//de forma vertical y los impares de forma horizontal.
+		for (int i = 0; i < numeroNPCs; i++) {
+			boolean noCercaDelJugador = false;
+			jugadorX = 300;
+			jugadorY = 425;
+			//nos aseguramos que los malos que aparecen de forma random
+			//no aparezcan sor el fugador bueno
+			while (!noCercaDelJugador){
+				noJugadorX[i] = (float) (Math.random() * mapaAncho);
+				noJugadorY[i] = (float) (Math.random() * mapaAlto);
+				if(noJugadorX[i] < 200 || noJugadorX[i] >400
+						&& noJugadorY[i] < 325 )
+					noCercaDelJugador = true;
+			}
+
+			if (i % 2 == 0) {
+				// NPC par => mover de forma vertical
+				destinoX[i] = noJugadorX[i];
+				destinoY[i] = (float) (Math.random() * mapaAlto);
+				//Determinamos cual de las animaciones verticales se utiliza.
+				if (noJugadorY[i] < destinoY[i]) {
+					noJugador[i] = noJugadorArriba;
+				} else {
+					noJugador[i] = noJugadorAbajo;
+				}
+			} else {
+				// NPC impar => mover de forma horizontal
+				destinoX[i] = (float) (Math.random() * mapaAncho);
+				destinoY[i] = noJugadorY[i];
+				//Determinamos cual de las animaciones horizontales se utiliza.
+				if (noJugadorX[i] < destinoX[i]) {
+					noJugador[i] = noJugadorDerecha;
+				} else {
+					noJugador[i] = noJugadorIzquierda;
+				}
+			}
+		}
+
+		// Ponemos a cero el atributo stateTimeNPC, que marca el tiempo e ejecución de la animación
+		// de los NPC.
+		stateTimeNPC = 0f;
+	}
+
+	/**
+	 * Este metodo es auxiliar para que no el srpite
+	 * se desplace tecleando solo una vez y se mueva
+	 * mientras esta este pulsada.
+	 * @param keycode
+	 */
+	public void daleMovimientoTecleando(int keycode)
+	{
+		//Si pulsamos uno de los cursores, se desplaza el sprite
+		//de forma adecuada un pixel, y se pone a cero el
+		//atributo que marca el tiempo de ejecución de la animación,
+		//provocando que la misma se reinicie.
+		//stateTimePC = 0;
+
+		//Guardamos la posición anterior del jugador por si al desplazarlo se topa
+		//con un obstáculo y podamos volverlo a la posición anterior.
+		float jugadorAnteriorX = jugadorX;
+		float jugadorAnteriorY = jugadorY;
+		int velocidad  = 3;
+		if (keycode == Input.Keys.LEFT) {
+			jugadorX += -velocidad;
+			jugador = jugadorIzquierda;
+			jugadorIzquierda.setPlayMode(Animation.PlayMode.LOOP);
+		}
+		if (keycode == Input.Keys.RIGHT) {
+			jugadorX += velocidad;
+			jugador = jugadorDerecha;
+			jugadorDerecha.setPlayMode(Animation.PlayMode.LOOP);
+		}
+		if (keycode == Input.Keys.UP) {
+			jugadorY += velocidad;
+			jugador = jugadorArriba;
+			jugadorArriba.setPlayMode(Animation.PlayMode.LOOP);
+		}
+		if (keycode == Input.Keys.DOWN) {
+			jugadorY += -velocidad;
+			jugador = jugadorAbajo;
+			jugadorAbajo.setPlayMode(Animation.PlayMode.LOOP);
+		}
+
+		//Si pulsamos la tecla del número 1, se alterna la visibilidad de la primera capa
+		//del mapa de baldosas.
+		if (keycode == Input.Keys.NUM_1)
+			mapa.getLayers().get(0).setVisible(!mapa.getLayers().get(0).isVisible());
+		//Si pulsamos la tecla del número 2, se alterna la visibilidad de la segunda capa
+		//del mapa de baldosas.
+		if (keycode == Input.Keys.NUM_2)
+			mapa.getLayers().get(1).setVisible(!mapa.getLayers().get(1).isVisible());
+
+		calcularColisionObstáculo(jugadorAnteriorX, jugadorAnteriorY);
+		calcularColisionAgujerosNegros();
+		calcularColisionCollaresObjetos();
+		detectarColisionPlataformaBarco();
+		calcularColisionPiedrasAgua(jugadorAnteriorX, jugadorAnteriorY);
+		//sonidoPasos.play(0.25f);
+
+		//	return false;
+	}
+
+	/**
+	 * Este metodo es auxiliar para que no el srpite
+	 * se desplace tecleando solo una vez y se mueva
+	 * mientras esta este pulsada.
+	 * @param screenX
+	 * @param screenY
+	 */
+	public void daleMovimientoTactil(float screenX, float screenY)
+	{
+		// Vector en tres dimensiones que recoge las coordenadas donde se ha hecho click
+		// o toque de la pantalla.
+		Vector3 clickCoordinates = new Vector3(screenX, screenY, 0);
+		// Transformamos las coordenadas del vector a coordenadas de nuestra cámara.
+		Vector3 posicion = camara.unproject(clickCoordinates);
+		//Se pone a cero el atributo que marca el tiempo de ejecución de la animación,
+		//provocando que la misma se reinicie.
+		//stateTimePC = 0;
+
+		//Guardamos la posición anterior del jugador por si al desplazarlo se topa
+		//con un obstáculo y podamos volverlo a la posición anterior.
+		float jugadorAnteriorX = jugadorX;
+		float jugadorAnteriorY = jugadorY;
+		int velocidad  = 3;
+
+		//Si se ha pulsado por encima de la animación, se sube esta 5 píxeles y se reproduce la
+		//animación del jugador desplazándose hacia arriba.
+		if ((jugadorY + 48) < posicion.y) {
+			jugadorY += velocidad;
+			jugador = jugadorArriba;
+			jugadorArriba.setPlayMode(Animation.PlayMode.LOOP);
+			//Si se ha pulsado por debajo de la animación, se baja esta 5 píxeles y se reproduce
+			//la animación del jugador desplazándose hacia abajo.
+		} else if ((jugadorY) > posicion.y) {
+			jugadorY += -velocidad;
+			jugador = jugadorAbajo;
+			jugadorAbajo.setPlayMode(Animation.PlayMode.LOOP);
+		}
+		//Si se ha pulsado mas de 24 a la derecha de la animación, se mueve esta 5 píxeles a la derecha y
+		//se reproduce la animación del jugador desplazándose hacia la derecha.
+		if ((jugadorX + 24) < posicion.x) {
+			jugadorX += velocidad;
+			jugador = jugadorDerecha;
+			jugadorDerecha.setPlayMode(Animation.PlayMode.LOOP);
+			//Si se ha pulsado más de 24 a la izquierda de la animación, se mueve esta 5 píxeles a la
+			// izquierda y se reproduce la animación del jugador desplazándose hacia la izquierda.
+		} else if ((jugadorX - 24) > posicion.x) {
+			jugadorX += -velocidad;
+			jugador = jugadorIzquierda;
+			jugadorIzquierda.setPlayMode(Animation.PlayMode.LOOP);
+		}
+		calcularColisionObstáculo(jugadorAnteriorX, jugadorAnteriorY);
+		calcularColisionAgujerosNegros();
+		calcularColisionCollaresObjetos();
+		detectarColisionPlataformaBarco();
+		calcularColisionPiedrasAgua(jugadorAnteriorX, jugadorAnteriorY);
+	}
+
+	@Override
+	public boolean keyTyped(char character) {
+		return false;
+	}
+
+	/**
+	 * Detecta colicion los los abstaculas, y paredes
+	 * @param jugadorAnteriorX
+	 * @param jugadorAnteriorY
+	 */
+	public void calcularColisionObstáculo(float jugadorAnteriorX, float jugadorAnteriorY)
+	{
+		// Detectamos las colisiones con los obstáculos del mapa y si el jugador se sale del mismo.
+		// para poner al jugador en su posición anterior
+		if ((jugadorX < 0 || jugadorY < 0 ||
+				jugadorX > (mapaAncho - anchoJugador) ||
+				jugadorY > (mapaAlto - altoJugador)) ||
+				((obstaculos[(int) ((jugadorX + anchoJugador / 4) / anchoCelda)][((int) (jugadorY) / altoCelda)]) ||
+						(obstaculos[(int) ((jugadorX + 3 * anchoJugador / 4) / anchoCelda)][((int) (jugadorY) / altoCelda)]))) {
+				jugadorX = jugadorAnteriorX;
+				jugadorY = jugadorAnteriorY;
+				sonidoObstaculo.play(0.5f);
+		}
+	}
+
+	/**
+	 * Detecta colicion los los abstaculas, y paredes
+	 * @param jugadorAnteriorX
+	 * @param jugadorAnteriorY
+	 */
+	public void calcularColisionPiedrasAgua(float jugadorAnteriorX, float jugadorAnteriorY)
+	{
+		// Detectamos las colisiones con los obstáculos del mapa y si el jugador se sale del mismo.
+		// para poner al jugador en su posición anterior
+		if ((jugadorX < 0 || jugadorY < 0 ||
+				jugadorX > (mapaAncho - anchoJugador) ||
+				jugadorY > (mapaAlto - altoJugador)) ||
+				((piedrasAgua[(int) ((jugadorX + anchoJugador / 4) / anchoCelda)][((int) (jugadorY) / altoCelda)]) ||
+						(piedrasAgua[(int) ((jugadorX + 3 * anchoJugador / 4) / anchoCelda)][((int) (jugadorY) / altoCelda)]))) {
+			jugadorX = jugadorAnteriorX;
+			jugadorY = jugadorAnteriorY;
+			sonidoObstaculo.play(0.5f);
+		}
+	}
+
+	/**
+	 * Detecta colicion los del malo con las piedras o el agua
+	 * @param jugadorAnteriorX
+	 * @param jugadorAnteriorY
+	 */
+	public void calcularColisionPiedrasAguaMalo(float jugadorAnteriorX, float jugadorAnteriorY)
+	{
+		// Detectamos las colisiones con los obstáculos del mapa y si el jugador se sale del mismo.
+		// para poner al jugador en su posición anterior
+		if ((noJugadorX2 < 0 || noJugadorY2 < 0 ||
+			noJugadorX2 > (mapaAncho - anchoJugador) ||
+			noJugadorY2 > (mapaAlto - altoJugador)) ||
+			((piedrasAgua[(int) ((noJugadorX2 + anchoJugador / 4) / anchoCelda)][((int) (noJugadorY2) / altoCelda)]) ||
+					(piedrasAgua[(int) ((noJugadorX2 + 3 * anchoJugador / 4) / anchoCelda)][((int) (noJugadorY2) / altoCelda)]))) {
+			noJugadorX2 = jugadorAnteriorX;
+			noJugadorY2 = jugadorAnteriorY;
+			maloChoca = true;
+		}
+	}
+
+	/**
+	 *  Detecta la colicion con el agujero
+	 */
+	public void calcularColisionAgujerosNegros()
+	{
+		if(haCaido != true) {
+			if (((agujerosNegros[(int) ((jugadorX + anchoJugador / 4) / anchoCelda)][((int) (jugadorY) / altoCelda)]) ||
+					(agujerosNegros[(int) ((jugadorX + 3 * anchoJugador / 4) / anchoCelda)][((int) (jugadorY) / altoCelda)]))) {
+				haCaido = true;
+				desaparecenVidas = false;
+				//sonido de la caida
+				musica.pause();
+				//sonidoPasos.stop();
+				sonidoColisionEnemigo.stop();
+				sonidoCaidaAgujero.play(0.25f);
+			}
+		}
+	}
+
+	/**
+	 *
+	 */
+	private void detectaColisionMalos()
+	{
+		if(haSidoAtrapado != true) {
+			//Vamos a comprobar que el rectángulo que rodea al jugador, no se solape
+			//con el rectángulo de alguno de los NPC. Primero calculamos el rectángulo
+			//en torno al jugador.
+			Rectangle rJugador = new Rectangle(jugadorX,jugadorY,anchoJugador,altoJugador);
+			Rectangle rNPC;
+			//Ahora recorremos el array de NPC, para cada uno generamos su rectángulo envolvente
+			//y comprobamos si se solapa o no con el del Jugador.
+			for (int i = 0; i < numeroNPCs; i++) {
+				rNPC = new Rectangle(noJugadorX[i], noJugadorY[i], anchoNoJugador, altoNoJugador);
+				//Se comprueba si se solapan.
+				if (rJugador.overlaps(rNPC)) {
+					//hacer lo que haya que hacer en este caso, como puede ser reproducir un efecto
+					//de sonido, una animación del jugador alternativa y, posiblemente, que este muera
+					//y se acabe la partida actual. En principio, en este caso, lo único que se hace
+					//es mostrar un mensaje en la consola de texto.
+					System.out.println("Ahi esta el malo!!!");
+					sonidoColisionEnemigo.play(0.25f);
+					haSidoAtrapado = true;
+					desaparecenVidas = false;
+				}
+			}
+		}
+	}
+
+	/**
+	 *
+	 */
+	private void detectaColisionSuperMalo()
+	{
+		if(haSidoAtrapado != true) {
+			//Vamos a comprobar que el rectángulo que rodea al jugador, no se solape
+			//con el rectángulo de alguno de los NPC. Primero calculamos el rectángulo
+			//en torno al jugador.
+			Rectangle rJugador = new Rectangle(jugadorX,jugadorY,anchoJugador,altoJugador);
+			Rectangle rNPC;
+			//Ahora recorremos el array de NPC, para cada uno generamos su rectángulo envolvente
+			//y comprobamos si se solapa o no con el del Jugador.
+			rNPC = new Rectangle(noJugadorX2, noJugadorY2, anchoNoJugador, altoNoJugador);
+			//Se comprueba si se solapan.
+			if (rJugador.overlaps(rNPC)) {
+				//hacer lo que haya que hacer en este caso, como puede ser reproducir un efecto
+				//de sonido, una animación del jugador alternativa y, posiblemente, que este muera
+				//y se acabe la partida actual. En principio, en este caso, lo único que se hace
+				//es mostrar un mensaje en la consola de texto.
+				System.out.println("Ahi esta el Super  malo!!!");
+				sonidoColisionEnemigo.play(0.25f);
+				haSidoAtrapado = true;
+				desaparecenVidas = false;
+			}
+		}else
+			maloChoca = false;
+
+	}
+
+	/**
+	 *  Detecta la colicion con el o encuentro con los collares
+	 */
+	public void calcularColisionCollaresObjetos()
+	{
+		int pos1 = (int) ((jugadorX + anchoJugador / 4) / anchoCelda);
+		int pos2 = ((int) (jugadorY) / altoCelda);
+		int pos3 = (int) ((jugadorX + 3 * anchoJugador / 4) / anchoCelda);
+		int pos4 = ((int) (jugadorY) / altoCelda);
+		if ((collaresObjetos[pos1][pos2])
+				&& ((capaCollaresObjetos.getCell(pos1, pos2).getTile()) != null)){
+			//Hacemos que el collar con colision desaparezca
+			capaCollaresObjetos.getCell(pos1, pos2).setTile(null);
+			cantidadCollaresEncontrados--;
+			System.out.println("Ya tienes un collar!!! Quedan por recolectar: " + cantidadCollaresEncontrados
+					+ " collares");
+		}else if ((collaresObjetos[pos3][pos4])
+				&& capaCollaresObjetos.getCell((pos3), (pos4)).getTile() != null) {
+			//Hacemos que el collar con colision desaparezca
+			capaCollaresObjetos.getCell(pos3, pos4).setTile(null);
+			cantidadCollaresEncontrados--;
+			System.out.println("Ya tienes un collar!!! Quedan por recolectar: " + cantidadCollaresEncontrados
+						+ " collares");
+		}
+	}
+
+	/**
+	 * Metodo caidaBarco. Comprueba si personaje se sube al barco
+	 */
+	private void detectarColisionPlataformaBarco() {
+		if ((jugadorX < 0 || jugadorY < 0 ||
+				jugadorX > (mapaAncho - anchoJugador) ||
+				jugadorY > (mapaAlto - altoJugador)) ||
+				((plataforma[(int) ((jugadorX + anchoJugador / 4) / anchoCelda)][((int) (jugadorY) / altoCelda)]) ||
+						(plataforma[(int) ((jugadorX + 3 * anchoJugador / 4) / anchoCelda)][((int) (jugadorY) / altoCelda)]))) {
+			teHasHundido = true;
+			sonidoObstaculo.play(1f);
+			desaparecenVidas = false;
+		}
+	}
+
+	@Override
+	public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+		jugadorArriba.setPlayMode(Animation.PlayMode.NORMAL);
+		jugadorAbajo.setPlayMode(Animation.PlayMode.NORMAL);
+		jugadorIzquierda.setPlayMode(Animation.PlayMode.NORMAL);
+		jugadorDerecha.setPlayMode(Animation.PlayMode.NORMAL);//Dibujamos las animaciones de los NPC
+
+		return false;
+	}
+
+	@Override
+	public boolean touchDragged(int screenX, int screenY, int pointer) {
+		return false;
+	}
+
+	@Override
+	public boolean mouseMoved(int screenX, int screenY) {
+		return false;
+	}
+
+	@Override
+	public boolean scrolled(int amount) {
+		return false;
+	}
+	/**
+	 * Método que permite cambiar las coordenadas del NPC en la posición "i",
+	 * dada una variación "delta" en ambas coordenadas.
+	 */
+	private void actualizaNPCSuperMalo(float screenX, float screenY, float delta)
+	{
+		//Guardamos la posición anterior del jugador por si al desplazarlo se topa
+		//con un obstáculo y podamos volverlo a la posición anterior.
+		float jugadorAnteriorX2 = noJugadorX2;
+		float jugadorAnteriorY2 = noJugadorY2;
+		int velocidad  = 0;
+		if(!maloChoca) {
+			//Si se ha pulsado por encima de la animación, se sube esta 5 píxeles y se reproduce la
+			//animación del jugador desplazándose hacia arriba.
+			if (((noJugadorY2 + delta > screenY) && (screenY > noJugadorY2))
+					|| ((noJugadorY2 - delta < screenY) && (screenY < noJugadorY2))) {
+				//Determinamos cual de las animaciones verticales se utiliza.
+				if (noJugadorY2 < screenY) {
+					noJugador2 = noJugadorArriba2;
+					noJugadorArriba2.setPlayMode(Animation.PlayMode.LOOP);
+				} else {
+					noJugador2 = noJugadorAbajo2;
+					noJugadorAbajo2.setPlayMode(Animation.PlayMode.LOOP);
+				}
+			} else if (screenY > noJugadorY2) {
+				noJugadorY2 += delta;
+				noJugadorY2 += velocidad;
+				noJugador2 = noJugadorArriba2;
+				noJugadorArriba2.setPlayMode(Animation.PlayMode.LOOP);
+			} else if (screenY < noJugadorY2) {
+				noJugadorY2 -= delta;
+				noJugadorY2 += -velocidad;
+				noJugador2 = noJugadorAbajo2;
+				noJugadorAbajo2.setPlayMode(Animation.PlayMode.LOOP);
+			}
+
+			if (((noJugadorX2 + delta > screenX) && (screenX > noJugadorX2))
+					|| (noJugadorX2 - delta < screenX) && (screenX < noJugadorX2)) {
+				//Determinamos cual de las animaciones horizontales se utiliza.
+				if (noJugadorX2 < screenX) {
+					noJugador2 = noJugadorDerecha2;
+					noJugadorDerecha2.setPlayMode(Animation.PlayMode.LOOP);
+				} else {
+					noJugador2 = noJugadorIzquierda2;
+					noJugadorIzquierda2.setPlayMode(Animation.PlayMode.LOOP);
+				}
+			} else if (screenX > noJugadorX2) {
+				noJugadorX2 += delta;
+				noJugadorX2 += velocidad;
+				noJugador2 = noJugadorDerecha2;
+				noJugadorDerecha2.setPlayMode(Animation.PlayMode.LOOP);
+			} else if (screenX < noJugadorX2) {
+				noJugadorX2 -= delta;
+				noJugadorX2 += -velocidad;
+				noJugador2 = noJugadorIzquierda2;
+				noJugadorIzquierda2.setPlayMode(Animation.PlayMode.LOOP);
+			}
+		}else {
+			delta = 10;
+			if (noJugador2 == noJugadorAbajo2) {
+				noJugador2 = noJugadorIzquierda2;
+				noJugadorX2 -= delta;
+				noJugadorIzquierda2.setPlayMode(Animation.PlayMode.LOOP);
+			} else if (noJugador2 == noJugadorIzquierda2) {
+				noJugador2 = noJugadorArriba2;
+				noJugadorY2 += delta;
+				noJugadorArriba2.setPlayMode(Animation.PlayMode.LOOP);
+			} else if (noJugador2 == noJugadorArriba2) {
+				noJugador2 = noJugadorDerecha2;
+				noJugadorX2 += delta;
+				noJugadorDerecha2.setPlayMode(Animation.PlayMode.LOOP);
+			} else if (noJugador2 == noJugadorDerecha2) {
+				noJugador2 = noJugadorAbajo2;
+				noJugadorY2 -= delta;
+				noJugadorAbajo2.setPlayMode(Animation.PlayMode.LOOP);
+			}
+			maloChoca = false;
+		}
+		calcularColisionPiedrasAguaMalo(jugadorAnteriorX2, jugadorAnteriorY2);
+	}
+	/**
+	 * Método que permite cambiar las coordenadas del NPC en la posición "i",
+	 * dada una variación "delta" en ambas coordenadas.
+	 * @param i
+	 * @param delta
+	 */
+	private void actualizaNPC(int i, float delta) {
+		if( ((noJugadorY[i] + delta > destinoY[i]) && (destinoY[i] > noJugadorY[i]))
+				|| (noJugadorY[i] - delta < destinoY[i]) && (destinoY[i] < noJugadorY[i]))
+		{
+			destinoY[i] = (float) (Math.random() * mapaAlto);
+			//Determinamos cual de las animaciones verticales se utiliza.
+			if (noJugadorY[i] < destinoY[i]) {
+				noJugador[i] = noJugadorArriba;
+			} else {
+				noJugador[i] = noJugadorAbajo;
+			}
+		}
+		else if (destinoY[i] > noJugadorY[i]) {
+			noJugadorY[i] += delta;
+			noJugador[i] = noJugadorArriba;
+		}
+		else if (destinoY[i] < noJugadorY[i]) {
+			noJugadorY[i] -= delta;
+			noJugador[i] = noJugadorAbajo;
+		}
+
+		if( ((noJugadorX[i] + delta > destinoX[i]) && (destinoX[i] > noJugadorX[i]))
+				|| (noJugadorX[i] - delta < destinoX[i]) && (destinoX[i] < noJugadorX[i]))
+		{
+			destinoX[i] = (float) (Math.random() * mapaAncho);
+			//Determinamos cual de las animaciones horizontales se utiliza.
+			if (noJugadorX[i] < destinoX[i]) {
+				noJugador[i] = noJugadorDerecha;
+			} else {
+				noJugador[i] = noJugadorIzquierda;
+			}
+		}
+		else if (destinoX[i] > noJugadorX[i]) {
+			noJugadorX[i] += delta;
+			noJugador[i] = noJugadorDerecha;
+		}
+		else if (destinoX[i] < noJugadorX[i]) {
+			noJugadorX[i] -= delta;
+			noJugador[i] = noJugadorIzquierda;
+		}
+	}
+
+	/**
+	 * Metodo para terminar el juego
+	 */
+	private void finJuego(){
+		//condicion para que no repita el sonido una vez
+		//se termine el juego
+		if(juegoTerminado == false) {
+			musica.stop();
+			sonidoColisionEnemigo.stop();
+			if (cantidadCollaresEncontrados == 0)
+				sonidoGanar.play();
+			else
+				sonidoTheEnd.play();
+			juegoTerminado = true;
+			// Espera 3 segundos y cierra el juego
+			new java.util.Timer().schedule(
+					new java.util.TimerTask() {
+						@Override
+						public void run() {
+							Gdx.app.exit();
+							System.exit(0);
+						}
+					},
+					3000
+			);
+		}
+	}
+
+	/**
+	 * Liberar recursos del sistema
+	 */
+	@Override
+	public void dispose () {
+		mapa.dispose();
+		mapaRenderer.dispose();
+		img.dispose();
+		sb.dispose();
+		musica.dispose();
+		sonidoObstaculo.dispose();
+		//sonidoPasos.dispose();
+		sonidoColisionEnemigo.dispose();
+		font.dispose();
+	}
+
+}
